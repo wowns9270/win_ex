@@ -6,29 +6,28 @@
 
 int main()
 {
-	/// Create 
+	/// Create
 	HANDLE create_handle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(shm_student), "shm_student");
 	if (create_handle == NULL)
 	{
 		std::cout << "file mapping create fail" << std::endl;
 	}
 
-	/// Open 
-	HANDLE open_handle = OpenFileMapping(FILE_MAP_ALL_ACCESS, false, "shm_student");
+	/// Open
+	HANDLE open_handle = OpenFileMapping(FILE_MAP_READ, false, "shm_student");
 	if (open_handle == NULL)
 	{
 		std::cout << "file mapping open fail" << std::endl;
 	}
 
-	/// link  , ¹ÝÈ¯°ªÀº ¸ÅÇÎµÈ viewÀÇ ½ÃÀÛÁÖ¼Ò 
-	shm_student* ptr = nullptr;
-	void* void_ptr = MapViewOfFile(open_handle, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(shm_student));
+	/// link  , ï¿½ï¿½È¯ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Îµï¿½ viewï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ö¼ï¿½
+	shm_student *ptr = nullptr;
+	void *void_ptr = MapViewOfFile(open_handle, FILE_MAP_READ, 0, 0, sizeof(shm_student));
 	if (void_ptr == nullptr)
 	{
 		std::cout << "file mapping fail" << std::endl;
 	}
-	ptr = static_cast<shm_student*>(void_ptr);
-
+	ptr = static_cast<shm_student *>(void_ptr);
 
 	/// print
 	while (1)
