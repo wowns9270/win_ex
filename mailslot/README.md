@@ -1,83 +1,44 @@
-memory mapped file (window api )
+mailslot
 
-사용 이유 : process간의 메모리 공유  
-winapi : 
-- CreateFileMapping
-- OpenFileMapping
-- MapViewOfFile 
+-> file 기반의 단방향 통신 (IPC)
 
 ---
+main ( receiver )
+
+- mailslot file 생성 
+- ReadFile을 통한 데이터 수신 
+    - MAILSLOT_WAIT_FOREVER로 mailslot file을 만들었을 경우, 다른 프로세스가 write를 하기전까지 기다리게 됨. 
+
+---
+clients ( sender )
+- mailslot name을 통해 mailslot file이 있는지 확인 ( CreateFile )
+- WriteFile을 통한 write ( 데이터 송신 )
+
+--- 
+
+- sender에서 time 지연없이 계속 write를 해도, reader 쪽에서 메세지가 씹히거나 누락되지 않았음. 
+
+- reader에서 데이터 처리를 위한 가정으로 sleep_thread를 주어도 sender에서 그 사이에 write한 내용이 누락되지 않았음. ( 순서 보장 )
+
+(두 결과에서 data struct queue와 유사하게 동작함)
+
+
+- mailslot의 reader 없이 clients 만 동작시켰을 경우에는 
+OPEN_EXISTING 옵션을 통해 GetLastError() -> 2(0x2) 를 출력 
+
+- 수신중에 reader를 종료시킬 경우, GetLastError() -> 2(0x2) 를 출력
+
+---
+결과 
 
 ![alt text](image.png)
 
-https://learn.microsoft.com/ko-kr/windows/win32/memory/file-mapping
-
----
-
-
-구현 : 
-
-공유할 메모리 구조체 : include/Student
-- id 
-- age
-- grade
-- score
-
----
-process :: main 
-- struct크기 만큼의 mapping file을 생성 ( file name : shm_student)
-
-- mapping file을 open ( file handle get)
-
-- mapping file의 시작 주소 get 
-
-- 3초 주기로 struct의 요소를 증가 
-(id++, age++, grade++, score++ )
----
-
-process :: clients 
-- 동일한 file 이름으로 mapping file 생성 시도 
-
-    - (이미 생성되어 있다면 , GetLastError()의 값이 ERROR_ALREADY_EXISTS 반환값은 기존 개체에 대한 핸들  반환)
-
-- mapping file을 open ( file handle get)
-
-- 3초 주기로 mapping object 요소를 확인 
----
-
-
-main 
-
-![alt text](image-2.png)
-
-
-client 결과 확인
-
-![alt text](image-3.png)
-
-![alt text](image-4.png)
-
----
-
-- 프로세스간 공유 목적으로 운영체제에서 사용하는 페이징 파일을 이용하는 목적이라면 실제 파일을 생성할 필요는 없다.
-    - CreateFile은 불필요 ( 현재 예시에서 INVALID_HANDLE_VALUE을 사용하는 부분)
-    - ![alt text](image-5.png)
-
-- 파일 객체 보호 특성 
-     - 프로세스의 주소공간으로 매핑할 때, 시스템에서는 프로세스별 보호 특성을 지정해줘야 한다. 
-        - main : readwrite (FILE_MAP_ALL_ACCESS )
-        - clients : read ( FILE_MAP_READ )
-            - clients에서 파일 객체 변경시에 dead 발생
-
-- 파일 객체 해제 
-    - UnmapViewOfFile로 프로세스 주소공간 매핑 해제 (release )
-    - CloseHandle 파일 객체(handle 반환)
-
----
+--- 
 
 참고 
 
-- https://learn.microsoft.com/en-us/dotnet/standard/io/memory-mapped-files
-- https://learn.microsoft.com/ko-kr/windows/win32/api/winbase/nf-winbase-createfilemappinga
-- https://luto.tistory.com/28
+- https://learn.microsoft.com/ko-kr/windows/win32/debug/system-error-codes--0-499-
+- https://learn.microsoft.com/ko-kr/windows/win32/api/winbase/nf-winbase-createmailslota
+- https://learn.microsoft.com/ko-kr/windows/win32/api/fileapi/nf-fileapi-readfile
 
+- https://m.blog.naver.com/qkrghdud0/221067396709
